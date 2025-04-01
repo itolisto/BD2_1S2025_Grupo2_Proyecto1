@@ -1,0 +1,27 @@
+version: "3.9"
+services: 
+  cassandra 1: 
+    image: cassandra 
+    container_name: node1 
+    ports: "9042:9042" 
+    networks: cassandra_net 
+
+  cassandra2:
+    image: cassandra
+    container_name: node2
+    environment: 
+      CASSANDRA_SEEDS: "node1"
+    networks:
+      - cassandra_net
+
+  cassandra3:
+    image: cassandra
+    container_name: node3
+    environment:
+      CASSANDRA_SEEDS: "node1"
+    networks:
+      - cassandra_net
+
+networks:
+  cassandra_net:
+    driver: bridge
