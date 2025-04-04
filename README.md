@@ -101,6 +101,24 @@ Crearemos un keyspace específico para la aplicación (`reservas_ks`) con replic
 
 Las sentencias de creación están en [ddl](./ddl.cql).
 
+#### Script de carga de datos en Python (usuarios, espacios, reservas)
+
+Crearemos un script Python [load](./load.py) que genere estos datos aleatoriamente y los inserte en Cassandra. El script usará el controlador Python de Cassandra (Datastax cassandra-driver) para conectarse al clúster y ejecutar las inserciones. Para eficiencia, aprovecharemos Batch Writes, es decir, agruparemos las escrituras de una misma operación lógica en un solo batch CQL para reducir viajes de red y asegurar atomicidad.
+
+Antes de ejecutar el script, asegúrese de tener instaladas las dependencias en su entorno Python local, principalmente:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install cassandra-driver 
+```
+
+Y finalmente ejecutar el script con:
+
+```bash
+python3 load.py
+```
+
 ____
 
 ### Requerimientos Técnicos del Proyecto
