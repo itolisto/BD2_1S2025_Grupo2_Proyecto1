@@ -4,16 +4,24 @@ services:
     image: cassandra:latest
     container_name: cassandra1
     ports:
+      - "6999:7000"        # Puerto de comunicacion intra-node
+      - "7001:7001"        # Puerto de comunicacion intra-node TLS
+      - "7197:7199"        # Puerto para JMX
       - "9042:9042"        # Puerto CQL para conectarse desde el host (nodo 1)
+      - "9160:9160"        # Puerto de servicio thrift
     environment:
       - CASSANDRA_SEEDS=cassandra1   # Este primer nodo se autodetermina como seed
       - CASSANDRA_CLUSTER_NAME=ReservaCluster
-      - LOCAL_JMX=yes                # Por defecto Cassandra limita JMX a local para permitir recolección de métricas
+      - LOCAL_JMX=no                # Por defecto Cassandra limita JMX a local para permitir recolección de métricas
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=1024M
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+      - data-1:/var/lib/cassandra
     networks:
       - cassandra_net
 
@@ -21,16 +29,21 @@ services:
     image: cassandra:latest
     container_name: cassandra2
     ports:
+      - "7198:7199"
       - "9043:9042"        # Exponer segundo nodo en puerto 9043 del host
     environment:
       - CASSANDRA_SEEDS=cassandra1   # Usar nodo1 como seed
       - CASSANDRA_CLUSTER_NAME=ReservaCluster
-      - LOCAL_JMX=yes
+      - LOCAL_JMX=no
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=1024M
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+      - data-2:/var/lib/cassandra
     depends_on:
       cassandra1:
         condition: service_healthy   # Espera a que nodo1 esté healthy antes de iniciar
@@ -41,21 +54,34 @@ services:
     image: cassandra:latest
     container_name: cassandra3
     ports:
+      - "7199:7199"
       - "9044:9042"        # Exponer tercer nodo en puerto 9044 del host
     environment:
       - CASSANDRA_SEEDS=cassandra1   # Usar nodo1 como seed
       - CASSANDRA_CLUSTER_NAME=ReservaCluster
-      - LOCAL_JMX=yes
+      - LOCAL_JMX=no
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=1024M
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+      - data-3:/var/lib/cassandra
     depends_on:
       cassandra2:
         condition: service_healthy   # Espera a nodo2 (y transitivamente nodo1) antes de iniciar
     networks:
       - cassandra_net
+
+volumes:
+  data-1:
+    driver: local
+  data-2:
+    driver: local
+  data-3:
+    driver: local
 
 networks:
   cassandra_net:

@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  cassandra1-exporter:
+    image: criteord/cassandra_exporter:latest
+    environment:
+      - CASSANDRA_EXPORTER_CONFIG_host=cassandra1:7197   # conectar al JMX de cassandra1
+    networks:
+      - cassandra_net
+    ports:
+      - "9101:8080"   # expone métricas en http://localhost:9101
+
+  cassandra2-exporter:
+    image: criteord/cassandra_exporter:latest
+    environment:
+      - CASSANDRA_EXPORTER_CONFIG_host=cassandra2:7198
+    networks:
+      - cassandra_net
+    ports:
+      - "9102:8080"   # expone métricas en http://localhost:9102
+
+  cassandra3-exporter:
+    image: criteord/cassandra_exporter:latest
+    environment:
+      - CASSANDRA_EXPORTER_CONFIG_host=cassandra3:7199
+    networks:
+      - cassandra_net
+    ports:
+      - "9103:8080"   # expone métricas en http://localhost:9103
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      - cassandra1-exporter
+      - cassandra2-exporter
+      - cassandra3-exporter
+    ports:
+      - "9090:9090"   # UI web de Prometheus disponible en localhost:9090
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - cassandra_net
+
+networks:
+  cassandra_net:
+    driver: bridge

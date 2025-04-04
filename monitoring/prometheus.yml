@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s    # Intervalo global de recolección
+
+scrape_configs:
+- job_name: 'cassandra'
+  metrics_path: '/metrics'
+  scrape_interval: 15s
+  static_configs:
+    - targets: ['cassandra1-exporter:8080', 'cassandra2-exporter:8080', 'cassandra3-exporter:8080']
