@@ -89,6 +89,17 @@ Cassandra expone sus métricas internas a través de JMX (Java Management Extens
 
 Esta configuración define un único job llamado "cassandra" con tres targets estáticos: los tres exportadores en sus puertos internos 8080 (Prometheus, al estar en la misma red Docker, usará directamente los nombres de contenedor cassandra*-exporter). Cada 15 segundos Prometheus consultará cada exportador para obtener las métricas actuales. Acceso a Prometheus: Una vez que todos los servicios estén en marcha, podemos acceder a la interfaz web de Prometheus en http://localhost:9090. En esta interfaz, bajo Status -> Targets, deberíamos ver los tres objetivos (exporters) con estado "UP" si todo funciona correctamente. También podemos explorar las métricas en Graph o Metrics – por ejemplo, buscar org_apache_cassandra_metrics para ver métricas específicas de Cassandra.
 
+#### Modelado desnormalizado en Cassandra
+
+Crearemos un keyspace específico para la aplicación (`reservas_ks`) con replicación SimpleStrategy y factor 2. Dentro de este keyspace definiremos cinco tablas principales:
+
+1. usuario – datos de usuarios.
+2. espacio – datos de espacios.
+3. reservas_por_usuario – historial de reservas por usuario.
+4. reservas_por_espacio – historial de reservas por espacio (ordenadas por fecha).
+5. reservas_por_fecha – índice de reservas por fecha/horario (para ayudar a consultar disponibilidad).
+
+Las sentencias de creación están en [ddl](./ddl.cql).
 
 ____
 
