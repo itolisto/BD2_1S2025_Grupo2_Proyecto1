@@ -5,6 +5,8 @@ import uuid
 from datetime import date, datetime, timedelta
 from collections import defaultdict
 
+# auth = PlainTextAuthProvider(username='cassandra', password='cassandra')
+# cluster = Cluster(contact_points=["127.0.0.1"], port=9042, auth_provider=auth)
 cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
 session = cluster.connect("reservas_ks")
 
