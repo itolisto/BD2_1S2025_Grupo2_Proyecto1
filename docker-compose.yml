@@ -1,24 +1,59 @@
-version: "3.9"
-services: 
-  cassandra 1: 
-    image: cassandra 
-    container_name: node1 
-    ports: "9042:9042" 
-    networks: cassandra_net 
+version: "3.8"
+services:
+  cassandra1:
+    image: cassandra:latest
+    container_name: cassandra1
+    ports:
+      - "9042:9042"        # Puerto CQL para conectarse desde el host (nodo 1)
+    environment:
+      - CASSANDRA_SEEDS=cassandra1   # Este primer nodo se autodetermina como seed
+      - CASSANDRA_CLUSTER_NAME=ReservaCluster
+      - LOCAL_JMX=yes                # Por defecto Cassandra limita JMX a local para permitir recolección de métricas
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - cassandra_net
 
   cassandra2:
-    image: cassandra
-    container_name: node2
-    environment: 
-      CASSANDRA_SEEDS: "node1"
+    image: cassandra:latest
+    container_name: cassandra2
+    ports:
+      - "9043:9042"        # Exponer segundo nodo en puerto 9043 del host
+    environment:
+      - CASSANDRA_SEEDS=cassandra1   # Usar nodo1 como seed
+      - CASSANDRA_CLUSTER_NAME=ReservaCluster
+      - LOCAL_JMX=yes
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      cassandra1:
+        condition: service_healthy   # Espera a que nodo1 esté healthy antes de iniciar
     networks:
       - cassandra_net
 
   cassandra3:
-    image: cassandra
-    container_name: node3
+    image: cassandra:latest
+    container_name: cassandra3
+    ports:
+      - "9044:9042"        # Exponer tercer nodo en puerto 9044 del host
     environment:
-      CASSANDRA_SEEDS: "node1"
+      - CASSANDRA_SEEDS=cassandra1   # Usar nodo1 como seed
+      - CASSANDRA_CLUSTER_NAME=ReservaCluster
+      - LOCAL_JMX=yes
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      cassandra2:
+        condition: service_healthy   # Espera a nodo2 (y transitivamente nodo1) antes de iniciar
     networks:
       - cassandra_net
 
