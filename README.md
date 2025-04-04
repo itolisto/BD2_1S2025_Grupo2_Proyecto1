@@ -119,7 +119,8 @@ Y finalmente ejecutar el script con:
 python3 load.py
 ```
 
-____
+#### Consultas de ejemplo en Python
 
-### Requerimientos Técnicos del Proyecto
-
+1. Consultar disponibilidad de un espacio en una fecha.
+2. Ver historial de reservas de un usuario.
+3. Obtener ocupación de espacios en un rango de fechas.
