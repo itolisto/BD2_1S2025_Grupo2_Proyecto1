@@ -77,7 +77,8 @@ ubicacion
 Se configura un clúster local de Cassandra con 3 nodos usando Docker y Docker Compose. Para simplificar, usaremos la estrategia de replicación SimpleStrategy (adecuada para un solo centro de datos) con factor de replicación = 2 para nuestro keyspace​. Esto significa que cada dato se copiará en dos nodos distintos del clúster, aumentando la tolerancia a fallos (si un nodo cae, el dato aún reside en otro).
 
 ```bash
-docker compose -f docker-compose.yml up 
+docker compose -f docker-compose.yml up
+docker compose -f docker-compose-stats.yml up
 ```
 
 Docker Compose nos permite definir los 3 contenedores Cassandra y sus parámetros. Uno de los nodos actúa como seed (nodo semilla) para que los demás puedan unirse al anillo. Cada contenedor expone el puerto 9042 (protocolo CQL nativo) en el host con un puerto distinto para poder conectarnos desde la máquina anfitriona. También habilitamos JMX en cada nodo (puerto 7199) para monitoreo.
@@ -95,6 +96,13 @@ Para monitorear el desempeño y estado del clúster Cassandra, integraremos Prom
 Cassandra expone sus métricas internas a través de JMX (Java Management Extensions) en el puerto 7199. Prometheus no puede leer JMX directamente, por lo que utilizamos un exporter que traduzca de JMX a un endpoint HTTP de métricas en formato Prometheus. En este proyecto usaremos la imagen criteord/cassandra_exporter (un exportador de Cassandra listo para usar). Desplegaremos un contenedor exportador por cada nodo Cassandra.
 
 Esta configuración define un único job llamado "cassandra" con tres targets estáticos: los tres exportadores en sus puertos internos 8080 (Prometheus, al estar en la misma red Docker, usará directamente los nombres de contenedor cassandra*-exporter). Cada 15 segundos Prometheus consultará cada exportador para obtener las métricas actuales. Acceso a Prometheus: Una vez que todos los servicios estén en marcha, podemos acceder a la interfaz web de Prometheus en http://localhost:9090. En esta interfaz, bajo Status -> Targets, deberíamos ver los tres objetivos (exporters) con estado "UP" si todo funciona correctamente. También podemos explorar las métricas en Graph o Metrics – por ejemplo, buscar org_apache_cassandra_metrics para ver métricas específicas de Cassandra.
+
+```sql
+-- CPU
+cassandra_stats{name=~".*java:lang:operatingsystem:cpuload*"}
+```
+
+Metricas de `cassandra-exporter` [aquí](https://github.com/instaclustr/cassandra-exporter/wiki/Exported-Metrics)
 
 #### Modelado desnormalizado en Cassandra
 
@@ -173,7 +181,7 @@ Dado RF=2, tanto QUORUM como ALL exigirán los 2 nodos. Vamos a observar qué oc
 1. Insertar un registro de prueba
 2. Con todos los nodos arriba, en cqlsh o usando Python, intentar leer ese registro con consistencia QUORUM:
 
-```sql:
+```sql
 CONSISTENCY QUORUM;
 SELECT * FROM reservas_por_usuario WHERE dpi='DPI0001' LIMIT 1;
 ```

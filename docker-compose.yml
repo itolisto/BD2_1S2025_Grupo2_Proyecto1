@@ -6,7 +6,7 @@ services:
     ports:
       - "6999:7000"        # Puerto de comunicacion intra-node
       - "7001:7001"        # Puerto de comunicacion intra-node TLS
-      - "7197:7199"        # Puerto para JMX
+      - "7197:7197"        # Puerto para JMX
       - "9042:9042"        # Puerto CQL para conectarse desde el host (nodo 1)
       - "9160:9160"        # Puerto de servicio thrift
     environment:
@@ -19,6 +19,7 @@ services:
                        -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
                        -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
                        -Dcom.sun.management.jmxremote.ssl=false
+                       -Dcom.sun.management.jmxremote.port=7197
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
@@ -35,7 +36,7 @@ services:
     image: cassandra:latest
     container_name: cassandra2
     ports:
-      - "7198:7199"
+      - "7198:7198"
       - "9043:9042"        # Exponer segundo nodo en puerto 9043 del host
     environment:
       - CASSANDRA_SEEDS=cassandra1   # Usar nodo1 como seed
@@ -47,6 +48,7 @@ services:
                        -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
                        -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
                        -Dcom.sun.management.jmxremote.ssl=false
+                       -Dcom.sun.management.jmxremote.port=7198
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
@@ -77,6 +79,7 @@ services:
                        -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
                        -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
                        -Dcom.sun.management.jmxremote.ssl=false
+                       -Dcom.sun.management.jmxremote.port=7199
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
