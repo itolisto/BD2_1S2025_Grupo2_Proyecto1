@@ -15,13 +15,19 @@ services:
       - LOCAL_JMX=no                # Por defecto Cassandra limita JMX a local para permitir recolección de métricas
       - HEAP_NEWSIZE=128M
       - MAX_HEAP_SIZE=1024M
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=true
+                       -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
+                       -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
+                       -Dcom.sun.management.jmxremote.ssl=false
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
     volumes:
-      - ./data-1:/var/lib/cassandra
+      - ./data-1:/data-1
+      - ./jmx/jmxremote.password:/etc/cassandra/jmxremote.password
+      - ./jmx/jmxremote.access:/etc/cassandra/jmxremote.access
     networks:
       - cassandra_net
 
@@ -37,13 +43,18 @@ services:
       - LOCAL_JMX=no
       - HEAP_NEWSIZE=128M
       - MAX_HEAP_SIZE=1024M
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=true
+                       -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
+                       -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
+                       -Dcom.sun.management.jmxremote.ssl=false
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
     volumes:
-      - ./data-2:/var/lib/cassandra
+      - ./jmx/jmxremote.password:/etc/cassandra/jmxremote.password
+      - ./jmx/jmxremote.access:/etc/cassandra/jmxremote.access
     depends_on:
       cassandra1:
         condition: service_healthy   # Espera a que nodo1 esté healthy antes de iniciar
@@ -62,13 +73,18 @@ services:
       - LOCAL_JMX=no
       - HEAP_NEWSIZE=128M
       - MAX_HEAP_SIZE=1024M
+      - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=true
+                       -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password
+                       -Dcom.sun.management.jmxremote.access.file=/etc/cassandra/jmxremote.access
+                       -Dcom.sun.management.jmxremote.ssl=false
     healthcheck:
       test: ["CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES"]  # Verifica que cqlsh responda
       interval: 30s
       timeout: 10s
       retries: 5
     volumes:
-      - ./data-3:/var/lib/cassandra
+      - ./jmx/jmxremote.password:/etc/cassandra/jmxremote.password
+      - ./jmx/jmxremote.access:/etc/cassandra/jmxremote.access
     depends_on:
       cassandra2:
         condition: service_healthy   # Espera a nodo2 (y transitivamente nodo1) antes de iniciar

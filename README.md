@@ -76,10 +76,16 @@ ubicacion
 
 Se configura un clúster local de Cassandra con 3 nodos usando Docker y Docker Compose. Para simplificar, usaremos la estrategia de replicación SimpleStrategy (adecuada para un solo centro de datos) con factor de replicación = 2 para nuestro keyspace​. Esto significa que cada dato se copiará en dos nodos distintos del clúster, aumentando la tolerancia a fallos (si un nodo cae, el dato aún reside en otro).
 
+```bash
+docker compose -f docker-compose.yml up 
+```
+
 Docker Compose nos permite definir los 3 contenedores Cassandra y sus parámetros. Uno de los nodos actúa como seed (nodo semilla) para que los demás puedan unirse al anillo. Cada contenedor expone el puerto 9042 (protocolo CQL nativo) en el host con un puerto distinto para poder conectarnos desde la máquina anfitriona. También habilitamos JMX en cada nodo (puerto 7199) para monitoreo.
 
+La creación de las tablas se realiza de la siguiente manera:
+
 ```bash
-docker exec -it cassandra1 cqlsh -u cassandra -p cassandra -f /var/lib/cassandra/ddl.cql
+docker exec -it cassandra1 cqlsh -u cassandra -p cassandra -f /data-1/ddl.cql
 ```
 
 #### Monitoreo con Prometheus del clúster Cassandra
