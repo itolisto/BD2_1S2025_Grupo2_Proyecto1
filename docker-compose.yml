@@ -21,7 +21,7 @@ services:
       timeout: 10s
       retries: 5
     volumes:
-      - data-1:/var/lib/cassandra
+      - ./data-1:/var/lib/cassandra
     networks:
       - cassandra_net
 
@@ -43,7 +43,7 @@ services:
       timeout: 10s
       retries: 5
     volumes:
-      - data-2:/var/lib/cassandra
+      - ./data-2:/var/lib/cassandra
     depends_on:
       cassandra1:
         condition: service_healthy   # Espera a que nodo1 esté healthy antes de iniciar
@@ -68,7 +68,7 @@ services:
       timeout: 10s
       retries: 5
     volumes:
-      - data-3:/var/lib/cassandra
+      - ./data-3:/var/lib/cassandra
     depends_on:
       cassandra2:
         condition: service_healthy   # Espera a nodo2 (y transitivamente nodo1) antes de iniciar

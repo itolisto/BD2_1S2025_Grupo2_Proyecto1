@@ -4,6 +4,8 @@ services:
     image: criteord/cassandra_exporter:latest
     environment:
       - CASSANDRA_EXPORTER_CONFIG_host=cassandra1:7197   # conectar al JMX de cassandra1
+      - CASSANDRA_EXPORTER_CONFIG_user=cassandra
+      - CASSANDRA_EXPORTER_CONFIG_password=cassandra
     networks:
       - cassandra_net
     ports:
@@ -13,6 +15,8 @@ services:
     image: criteord/cassandra_exporter:latest
     environment:
       - CASSANDRA_EXPORTER_CONFIG_host=cassandra2:7198
+      - CASSANDRA_EXPORTER_CONFIG_user=cassandra
+      - CASSANDRA_EXPORTER_CONFIG_password=cassandra
     networks:
       - cassandra_net
     ports:
@@ -22,6 +26,8 @@ services:
     image: criteord/cassandra_exporter:latest
     environment:
       - CASSANDRA_EXPORTER_CONFIG_host=cassandra3:7199
+      - CASSANDRA_EXPORTER_CONFIG_user=cassandra
+      - CASSANDRA_EXPORTER_CONFIG_password=cassandra
     networks:
       - cassandra_net
     ports:
