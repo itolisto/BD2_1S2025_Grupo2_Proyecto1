@@ -124,3 +124,64 @@ python3 load.py
 1. Consultar disponibilidad de un espacio en una fecha.
 2. Ver historial de reservas de un usuario.
 3. Obtener ocupación de espacios en un rango de fechas.
+
+#### Pruebas de escalabilidad y tolerancia a fallos
+
+1. Simular la caída de un nodo: Dado que configuramos factor de replicación = 2, cada dato está en dos nodos. Podemos simular la caída de un nodo apagando uno de los contenedores Cassandra.
+
+```bash
+docker-compose stop cassandra3
+```
+
+2. Probar operaciones con diferentes Consistency Level: Cassandra permite especificar el nivel de consistencia en cada operación de lectura/escritura​. Los niveles relevantes aquí son:
+
+* RF: Replication Factor
+* CL: Consistency Level
+
+- ONE: solo requiere que una réplica confirme la operación. Es el más rápido pero menos consistente (riesgo de lecturas obsoletas si justo esa réplica está desactualizada).
+- QUORUM: requiere mayoría de réplicas. En nuestro caso RF=2, mayoría de 2 es 2, o sea ambas réplicas deben confirmar. (Con RF=2, QUORUM equivale a ALL realmente).
+- ALL: requiere que todas las réplicas respondan. También significa ambas en RF=2.
+
+Dado RF=2, tanto QUORUM como ALL exigirán los 2 nodos. Vamos a observar qué ocurre en distintos escenarios:
+
+- Con todos los nodos arriba:
+
+* Lectura/escritura con CL=ONE: se satisfará con uno solo de los nodos, con baja latencia. La operación completará incluso si el otro nodo está momentáneamente lento o no disponible.
+* CL=QUORUM (o ALL): requerirá comunicación con ambos nodos, lo cual añade algo de latencia. Pero asegura que los datos leídos/escritos están en ambas copias. En un cluster pequeño RF=2, CL=QUORUM ofrece consistencia fuerte similar a ALL, ya que necesita ambas.
+
+- Con un nodo caído (cassandra3 apagado):
+
+* CL=ONE: Las lecturas/escrituras aún funcionarán si al menos una réplica (de las 2) está accesible. Por ejemplo, si consultamos un dato cuya réplica viva está en cassandra1, éste lo retornará satisfactoriamente con CL=ONE, ignorando que la otra copia en cassandra3 no respondió. CL=ONE seguirá funcionando (cualquier dato que tuviese una réplica en el nodo caído tendrá otra réplica en el nodo sobreviviente).
+* CL=QUORUM/ALL: Ahora cualquier operación que involucre datos replicados en el nodo caído requerirá la confirmación de ambas réplicas, pero una está caída, por lo que no podrá lograrse consistencia. Cassandra en este caso dará un error de unavailable exception o timeout. Es decir, con un nodo fuera, las consultas con CL=QUORUM o ALL no alcanzarán el número requerido de respuestas (2 de 2) y fallarán​. Solo cuando el nodo vuelva a estar en línea se restaurará la capacidad de QUORUM/ALL.
+
+:warning: Instrucciones para la prueba:
+
+1. Insertar un registro de prueba
+2. Con todos los nodos arriba, en cqlsh o usando Python, intentar leer ese registro con consistencia QUORUM:
+
+```sql:
+CONSISTENCY QUORUM;
+SELECT * FROM reservas_por_usuario WHERE dpi='DPI0001' LIMIT 1;
+```
+*(Solo a modo de prueba; cqlsh mostrará el resultado normalmente si ambas réplicas responden).
+
+3. Apaguar un nodo (cassandra3). Inmediatamente, vuelva a ejecutar la consulta con CL=QUORUM. En cqlsh, debería dar un error similar a "Unavailable: Required 2 responses, but only 1 replica responded".
+Esto confirma que con un nodo menos, no se logra el quorum de 2.
+
+4. Cambiar a consistencia ONE en cqlsh:
+
+```sql
+CONSISTENCY ONE;
+SELECT * FROM reservas_por_usuario WHERE dpi='DPI0001' LIMIT 1;
+```
+*Esta vez, debería retornar datos exitosamente (asumiendo que para ese dpi, la réplica disponible contiene el dato). En efecto, con CL=ONE basta la respuesta de la réplica que queda, y la consulta se resuelve​. Incluso si la otra copia estaba caída, no importa para CL=ONE.
+
+5. Vuelva a levantar el nodo caído:
+
+```bash
+docker-compose start cassandra3
+```
+
+Espere a que se reintegre (ver Prometheus status hasta que pase de DOWN a UN). Cassandra tiene mecanismos de gossip y reparación para que el nodo rezagado se ponga al día en las escrituras que se perdió mientras estuvo fuera (hinted handoff, read repair, etc., entran en juego).
+
+Opcional: Repetir con CL=ALL para ver que su comportamiento en este caso es igual a QUORUM (con RF=2, ALL = 2 réplicas, también fallaría con un nodo abajo, y con nodos arriba se comporta similar pero exige ambas respuestas siempre, incluso más estrictamente que QUORUM en clusters más grandes).
