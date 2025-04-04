@@ -115,9 +115,16 @@ Crearemos un script Python [load](./load.py) que genere estos datos aleatoriamen
 Antes de ejecutar el script, asegúrese de tener instaladas las dependencias en su entorno Python local, principalmente:
 
 ```bash
+brew install pyenv
+pyenv install 3.11.9
+pyenv local 3.11.9
+source ~/.zshrc
+
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install cassandra-driver 
+
+python3 -m pip install cassandra-driver
+python3 -m pip install tqdm
 ```
 
 Y finalmente ejecutar el script con:

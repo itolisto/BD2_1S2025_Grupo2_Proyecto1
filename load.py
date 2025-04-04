@@ -2,6 +2,7 @@ from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 from datetime import datetime, timedelta
 import uuid, random
+from tqdm import tqdm
 
 # Conectar al clúster Cassandra (nodo seed en localhost:9042)
 cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
@@ -40,7 +41,7 @@ for j in range(1, 6):
 # Rango de fechas: por ejemplo, desde 2025-01-01 hasta 2025-12-31
 fecha_inicio = datetime(2025, 1, 1)
 dias_rango = 365  # un año de rango de fechas
-for n in range(100000):
+for n in tqdm(range(100000), desc="Insertando reservas"):
     # Seleccionar usuario y espacio aleatoriamente
     dpi = random.choice(usuarios)
     id_esp = random.choice(espacios)
@@ -70,14 +71,21 @@ for n in range(100000):
     ubicacion_espacio = None  # (omitido por simplicidad)
 
     # Preparar sentencia de Batch para insertar en las 3 tablas de reservas
-    cql_batch = f"""
+    batch_query = """
     BEGIN BATCH
-      INSERT INTO reservas_por_usuario (dpi, fecha, hora_inicio, id_reserva, id_espacio, nombre_espacio, tipo_espacio, ubicacion_espacio, hora_fin, estado, nombre_usuario, capacidad_espacio)
-      VALUES ('{dpi}', '{inicio.date()}', '{inicio.time()}', {id_reserva}, '{id_esp}', '{nombre_espacio}', '{tipo_espacio}', '{ubicacion_espacio}', '{fin.time()}', '{estado}', '{nombre_usuario}', {capacidad_espacio});
-      INSERT INTO reservas_por_espacio (id_espacio, fecha, hora_inicio, id_reserva, dpi, nombre_usuario, hora_fin, estado, tipo_espacio, capacidad_espacio, ubicacion_espacio)
-      VALUES ('{id_esp}', '{inicio.date()}', '{inicio.time()}', {id_reserva}, '{dpi}', '{nombre_usuario}', '{fin.time()}', '{estado}', '{tipo_espacio}', {capacidad_espacio}, '{ubicacion_espacio}');
-      INSERT INTO reservas_por_fecha (fecha, hora_inicio, id_espacio, id_reserva)
-      VALUES ('{inicio.date()}', '{inicio.time()}', '{id_esp}', {id_reserva});
+    INSERT INTO reservas_por_usuario (dpi, fecha, hora_inicio, id_reserva, id_espacio, nombre_espacio, tipo_espacio, ubicacion_espacio, hora_fin, estado, nombre_usuario, capacidad_espacio)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO reservas_por_espacio (id_espacio, fecha, hora_inicio, id_reserva, dpi, nombre_usuario, hora_fin, estado, tipo_espacio, capacidad_espacio, ubicacion_espacio)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO reservas_por_fecha (fecha, hora_inicio, id_espacio, id_reserva)
+    VALUES (%s, %s, %s, %s);
     APPLY BATCH;
     """
-    session.execute(SimpleStatement(cql_batch))
+
+    params = (
+        dpi, inicio.date(), inicio.time(), id_reserva, id_esp, nombre_espacio, tipo_espacio, ubicacion_espacio, fin.time(), estado, nombre_usuario, capacidad_espacio,
+        id_esp, inicio.date(), inicio.time(), id_reserva, dpi, nombre_usuario, fin.time(), estado, tipo_espacio, capacidad_espacio, ubicacion_espacio,
+        inicio.date(), inicio.time(), id_esp, id_reserva
+    )
+
+    session.execute(batch_query, params)

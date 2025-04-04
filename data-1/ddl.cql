@@ -61,5 +61,5 @@ CREATE TABLE reservas_por_fecha (
   hora_inicio TIME,         -- Hora (parte de la partición)
   id_espacio TEXT,          -- Espacio reservado en esa fecha/hora (clave de clúster)
   id_reserva UUID,
-  PRIMARY KEY ((fecha, hora_inicio), id_espacio, id_reserva)
+  PRIMARY KEY ((fecha), hora_inicio, id_espacio, id_reserva)
 );

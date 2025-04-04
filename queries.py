@@ -2,25 +2,27 @@ from cassandra.cluster import Cluster
 from cassandra import ConsistencyLevel
 from cassandra.query import SimpleStatement
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from collections import defaultdict
 
-auth = PlainTextAuthProvider(username='cassandra', password='cassandra')
-cluster = Cluster(contact_points=["127.0.0.1"], port=9042, auth_provider=auth)
-# cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
+cluster = Cluster(contact_points=["127.0.0.1"], port=9042)
 session = cluster.connect("reservas_ks")
 
 # a) Consultar espacios disponibles por fecha
-def espacios_disponibles(fecha):
+def espacios_disponibles(fecha, hora_inicio):
+    # Consulta la partición exacta (fecha, hora)
     filas = session.execute(
-        "SELECT id_espacio FROM reservas_por_fecha WHERE fecha=%s",
-        (fecha)
+        "SELECT id_espacio FROM reservas_por_fecha WHERE fecha=%s", #  AND hora_inicio=%s
+        (fecha) #, hora_inicio
     )
     espacios_ocupados = {row.id_espacio for row in filas}
-    # Todos los espacios menos los ocupados
-    espacios_libres = [esp for esp in filas if esp not in espacios_ocupados]
-    print(f"Espacios disponibles el {fecha}: {espacios_libres}")
-    return espacios_libres
+
+    # Obtener todos los espacios registrados
+    todos = {row.id_espacio for row in session.execute("SELECT id_espacio FROM espacio")}
+    libres = list(todos - espacios_ocupados)
+
+    print(f"Espacios disponibles el {fecha} a las {hora_inicio}: {libres}")
+    return libres
 
 # b) Historial de reservas de un espacio en rango de fechas
 def historial_reservas_usuario(dpi, fecha_inicio=None, fecha_fin=None):
@@ -78,8 +80,8 @@ def ocupacion_espacios(fecha_inicio, fecha_fin):
             print(f"   - {r['fecha']} | {r['hora_inicio']}-{r['hora_fin']} | Usuario: {r['dpi']} | Estado: {r['estado']}")
 
 # --- Ejemplos de uso de las funciones anteriores --- #
-espacios_disponibles(date(2025, 5, 10))
+espacios_disponibles(date(2025, 5, 10)) # , time(14, 0)
 
-historial_reservas_usuario("DPI0001", date(2025, 4, 1), date(2025, 4, 30))
+# historial_reservas_usuario("DPI0001", date(2025, 4, 1), date(2025, 4, 30))
 
-ocupacion_espacios(date(2025, 4, 1), date(2025, 4, 3))
+# ocupacion_espacios(date(2025, 4, 1), date(2025, 4, 3))
