@@ -2,6 +2,13 @@
 
 ## <div align="center">  Laboratorio Sistemas de Bases de Datos 2 - Sección A </div>
 ## <div align="center">  Primer Semestre 2025 </div> 
+
+### <div align="center">  Sistema de reservas con Cassandra DB </div>
+
+<div align="center"> 
+<img src="./img/db.png" width=25%>
+</div>
+
 ___
 
 ## Miembros
@@ -38,39 +45,18 @@ Se aplica desnormalización en el modelo anterior, para evitar:
 
 <img src="./img/logico.png" width=95%>
 
-1. **Usuario:**
-
-DPI (pk)
-nombre
-email
-telefono
-NIT
-
-2. **Reservas:**
-
-id_reserva
-DPI
-id_espacio
-nombre_espacio
-nombre_usuario
-fecha
-hora_inicio
-hora_fin
-estado
-tipo_espacio
-capacidad_espacio
-ubicacion_espacio
-
-3. **Espacio:**
-
-id_espacio (pk)
-nombre
-tipo
-capacidad_max
-ubicacion
-
-
 ### Modelo Físico
+
+Con base a la estructura del modelo lógico, se realizó la estructura de definición de tablas y llaves para el sistema de reservas de espacios.
+
+| Tabla | Parámetros | llave primaria |
+| ---  | --- | ---- |
+|  **USUARIO**    |  dpi (pk), nombre, email, telefono, NIT    | dpi
+| **RESERVAS POR USUARIO** | dpi, fecha, hora_inicio, id_reserva, id_espacio, nombre_espacio, tipo_espacio, ubicacion_espacio, hora_fin, estado, nombre_usuario, capacidad_usuario | PRIMARY KEY ((dpi), fecha, hora_inicio, id_reserva)
+| **RESERVAS POR ESPACIO Y FECHA** | id_espacio, fecha, hora_inicio, id_reserva,dpi, nombre_usuario, hora_fin, estado, tipo_espacio, capacidad_espacio, ubicacion_espacio  | PRIMARY KEY ((id_espacio), fecha, hora_inicio, id_reserva)
+| **DISPONIBILIDAD DE ESPACIOS POR FECHA Y HORA** | fecha, hora_inicio, id_espacio, id_reserva | PRIMARY KEY ((fecha), hora_inicio, id_espacio, id_reserva)| 
+| **ESPACIO** | id_espacio (pk), nombre, tipo, capacidad_max, ubicacion | id_espacio
+
 
 #### Clúster de Cassandra en Docker (3 nodos, SimpleStrategy)
 
@@ -83,7 +69,13 @@ docker compose -f docker-compose-stats.yml up
 
 Docker Compose nos permite definir los 3 contenedores Cassandra y sus parámetros. Uno de los nodos actúa como seed (nodo semilla) para que los demás puedan unirse al anillo. Cada contenedor expone el puerto 9042 (protocolo CQL nativo) en el host con un puerto distinto para poder conectarnos desde la máquina anfitriona. También habilitamos JMX en cada nodo (puerto 7199) para monitoreo.
 
-La creación de las tablas se realiza de la siguiente manera:
+
+<img src="./img/docker.png" width=145%>
+
+
+##### La creación de las tablas se realiza de la siguiente manera:
+
+Se ejecuta un script cql, con la definición de las tablas.
 
 ```bash
 docker exec -it cassandra1 cqlsh -u cassandra -p cassandra -f /data-1/ddl.cql
